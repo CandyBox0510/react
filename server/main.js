@@ -1,7 +1,8 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var path = require('path');
-
+var resJson = [];
+var resOnJson = [];
 
 var mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost:27017/test'); // 기본 설정에 따라 포트가 상이 할 수 있습니다.
@@ -45,60 +46,108 @@ var PromoModel = mongoose.model("PromoAttr", attrSchema);
 //module.exports = mongoose.model('PromoAttr', attrSchema);
 
 app.get('/onload', (req, res) =>{
-    // res.header("Access-Control-Allow-Origin", "*");
-    // res.header("Access-Control-Allow-Headers", "Origin");
+    res.header("Access-Control-Allow-Origin", "*");
     console.log('[GET:ONLOAD START]');
-    PromoModel.find({'uniq' : 'banner'},function(err,Result){
-        if(err){
-            throw err;
+    var jsonData = JSON.parse('[{"uniq":"banner"},{"uniq":"switch"}]');
+    
+    function asyncLoop(i,callback){
+        if( i < jsonData.length){
+            PromoModel.find({'uniq' : jsonData[i].uniq}).lean().exec(function(err,Result){
+                if(err){
+                    throw err;
+                }
+                var text = JSON.stringify(Result).replace('[','').replace(']','');
+                var obj = {};
+                if(text!=''){
+                    obj = JSON.parse(text);
+                    resOnJson.push(
+                        {
+                            'uniq' : obj.uniq,
+                            'attr' : obj.attr
+                        }
+                    );
+                }
+                asyncLoop( i+1, callback);
+            })
         }else{
-            if(Result.length <= 0){
-                console.log("[onLoad] : 일치하는 데이터가 없어서 Null Str Response");
-                res.header('Access-Control-Allow-Origin','*');
-                res.json('');
-            }else{
-                console.log("[onLoad] : 일치하는 데이터 Response");
-                res.header('Access-Control-Allow-Origin','*');
-                sendData(res,Result[0].attr);
-            }
+            callback();
         }
-    })
+    }
+    asyncLoop( 0, function() {
+        res.json(resOnJson);
+        console.log(resOnJson);
+    });
+    // PromoModel.find({'uniq' : 'banner'},function(err,Result){
+    //     if(err){
+    //         throw err;
+    //     }else{
+    //         if(Result.length <= 0){
+    //             console.log("[onLoad] : 일치하는 데이터가 없어서 Null Str Response");
+    //             res.json('');
+    //         }else{
+    //             console.log("[onLoad] : 일치하는 데이터 Response");
+    //             sendData(res,Result[0].attr);
+    //         }
+    //     }
+    // })
 });
 
 
 app.post('/setting', (req, res) =>{
     console.log('[POST:SETTING START]');
     res.header("Access-Control-Allow-Origin", "*");
-    // res.header("Access-Control-Allow-Headers", "Content-Type,application/json");
     res.header("Access-Control-Allow-Methods","GET,POST,PUT,DELETE,OPTIONS");
-    //res.header("Access-Control-Allow-Headers", "Content-Type");
 
+    console.log('확인'+req.text);
     var jsonData = JSON.parse(req.text);
-    PromoModel.find({'uniq' : jsonData.uniq},function(err,Result){
-        if(err){
-            throw err;
-        }else{
-            if(Result.length <= 0){
-                console.log("[setting] : 해당 id 가 존재하지 않아서 생성");
-                //3. 도큐먼트 생성
-                var attrIns = new PromoModel({uniq:jsonData.uniq, attr : jsonData.attr});
-                attrIns.save(function(err,testIns2){
-                    if(err) return console.error(err);
-                    sendData(res,jsonData.attr);
-                });
-            }else{
-                console.log("[setting] : 해당 id가 존재하여 업데이트");
-                PromoModel.update({uniq:jsonData.uniq},{$set:{ attr : jsonData.attr}},function(error){
-                    if(err){
-                        throw err;
+    function asyncLoop(i,callback){
+        if( i < jsonData.length){
+            PromoModel.find({'uniq' : jsonData[i].uniq}).lean().exec(function(err,Result){
+                if(err){
+                    throw err;
+                }else{
+                    if(Result.length <= 0 && jsonData[i] != undefined){
+                        console.log("[setting] : 해당 id 가 존재하지 않아서 생성");
+                        //3. 도큐먼트 생성
+                        var attrIns = new PromoModel({uniq:jsonData[i].uniq, attr : jsonData[i].attr});
+                        attrIns.save(function(err,testIns2){
+                            if(err) return console.error(err);
+                        });
                     }else{
-                        console.log("[setting] : 업데이트 성공!! : " + jsonData.attr);
-                        sendData(res,jsonData.attr);
+                        console.log("[setting] : 해당 id가 존재하여 업데이트");
+                        console.log(jsonData[i]);
+                        if(jsonData[i] != undefined) {
+                            PromoModel.update({uniq:jsonData[i].uniq},{$set:{ attr : jsonData[i].attr}},function(error){
+                                if(err){
+                                    throw err;
+                                }else{
+                                    console.log("[setting] : 업데이트 성공!!");
+                                }
+                            });    
+                        }
                     }
-                });
-            }
+                }
+                var text = JSON.stringify(Result).replace('[','').replace(']','');
+                var obj = {};
+                if(text!=''){
+                    obj = JSON.parse(text);
+                    resJson.push(
+                        {
+                            'uniq' : obj.uniq,
+                            'attr' : obj.attr
+                        }
+                    );
+                }
+                console.log(resJson);
+                asyncLoop( i+1, callback);
+            })
+        }else{
+            callback();
         }
-    })
+    }
+    asyncLoop( 0, function() {
+        res.json(resJson);
+    });
 });
 
 //class 구분을 위해 공백을 추가하여 전송

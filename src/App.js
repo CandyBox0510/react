@@ -14,11 +14,15 @@ class App extends React.Component {
 			promotionBanner : [
 				{
 					'uniq' : 'banner',
-					'class' : ''
+					'attr' : ''
 				},
 				{
 					'uniq' : 'btn',
-					'class' : ''
+					'attr' : ''
+				},
+				{
+					'uniq' : 'switch',
+					'attr' : ''
 				}
 			]
 		};
@@ -34,7 +38,37 @@ class App extends React.Component {
 		}).then((res) =>{
       if(res.status === 200 || res.statue === 201){
 				res.json().then(
-					json =>	this.setState({currentAttr : 'promotion-banner'+json})
+					json =>	{
+											for(let j = 0, jsonLength=json.length; j < jsonLength; j++){
+											let promotionBanner = this.state.promotionBanner;
+											let nextPromotionBanner = [...promotionBanner]; 
+											let exist = false;
+											let existIdx = 0;
+												for(let i = 0, length=promotionBanner.length; i<length; i++){
+													if(promotionBanner[i].uniq == json[j].uniq){
+															exist = true;
+															existIdx = i;
+													}
+												}
+												if(exist){
+														nextPromotionBanner[existIdx] = {
+																...promotionBanner[existIdx],
+																attr : json[j].attr
+														}
+														this.setState({
+																promotionBanner : nextPromotionBanner,
+														});
+												}else{
+														this.setState({
+																promotionBanner: promotionBanner.concat({
+																		'uniq' : json[j].uniq,
+																		'attr' : json[j].attr
+																	}),
+														})
+												}
+											}
+									console.log(this.state);
+							}
 				);
       }else{
         console.error(res.statusText);
@@ -42,8 +76,8 @@ class App extends React.Component {
     }).catch(err => console.error(err));
 	}
 
-	handleAttr = (uniq,attr) =>{
-		console.log(JSON.stringify({uniq : uniq, attr : attr}));
+	handleAttr = (list) =>{
+		console.log(JSON.stringify(list));
 		fetch('http://localhost:3050/setting',{
 			method: 'post',
 			headers : new Headers({
@@ -51,14 +85,43 @@ class App extends React.Component {
 				'Content-Type' : 'text/plain',
 			}),
 			// body : JSON.stringify({uniq : 'test', attr : info})
-			body : JSON.stringify({uniq : uniq, attr : attr}).toString()
+			body : JSON.stringify(list).toString()
 			// headers:{
 			// 'Accept': 'application/json',
 			// 'Content-Type': 'application/json'}
 		}).then((res) =>{
       if(res.status === 200 || res.status === 201){
 				res.json().then(
-					json =>	this.setState({currentAttr : 'promotion-banner'+json})
+					json =>	{
+									for(let j = 0, jsonLength=json.length; j < jsonLength; j++){
+									let promotionBanner = this.state.promotionBanner;
+									let nextPromotionBanner = [...promotionBanner]; 
+									let exist = false;
+									let existIdx = 0;
+										for(let i = 0, length=promotionBanner.length; i<length; i++){
+											if(promotionBanner[i].uniq == json[j].uniq){
+													exist = true;
+													existIdx = i;
+											}
+										}
+										if(exist){
+												nextPromotionBanner[existIdx] = {
+														...promotionBanner[existIdx],
+														attr : json[j].attr
+												}
+												this.setState({
+														promotionBanner : nextPromotionBanner,
+												});
+										}else{
+												this.setState({
+														promotionBanner: promotionBanner.concat({
+																'uniq' : json[j].uniq,
+																'attr' : json[j].attr
+															}),
+												})
+										}
+									}
+					}
 				);
       }else{
 				console.log('res.status : ' + res.status);
@@ -76,8 +139,8 @@ class App extends React.Component {
     return (
       <div>
 				<Formdata onAttr={this.handleAttr} currentAttr={info.currentAttr} subAttr={subAttr}/>
-				<div>현재 클래스 : {info.currentAttr}</div>
-				<ProBanner currentAttr={info.currentAttr}/>
+				<div>현재 클래스 : {'promotion-banner '+info.promotionBanner[0].attr}</div>
+				<ProBanner info={this.state.promotionBanner}/>
       </div>
     );
   }
