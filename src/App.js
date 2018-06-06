@@ -6,6 +6,7 @@ import './clientlibs/css/common/main.css'
 import './clientlibs/css/main.css'
 
 
+//생성자
 class App extends React.Component {
   constructor(){
 		super(...arguments);
@@ -24,13 +25,12 @@ class App extends React.Component {
 		};
   }
   
+
+  //컴포넌트 생성이 완료되었을때
   componentDidMount(){
 		fetch('http://localhost:3050/onload',{
 			method: 'get',
 			dataType: 'json'
-			// headers:{
-			// 'Accept': 'application/json',
-			// 'Content-Type': 'application/json'}
 		}).then((res) =>{
       if(res.status === 200 || res.statue === 201){
 				res.json().then(
@@ -42,27 +42,27 @@ class App extends React.Component {
     }).catch(err => console.error(err));
 	}
 
+
+	//Attr을 세팅하는 함수
 	handleAttr = (uniq,attr) =>{
 		console.log(JSON.stringify({uniq : uniq, attr : attr}));
 		fetch('http://localhost:3050/setting',{
+			//post방식으로
 			method: 'post',
 			headers : new Headers({
 				'Accept' : 'application/json',
+				//Content-Type이 json이 되지 않음. jsonString으로 request
 				'Content-Type' : 'text/plain',
 			}),
-			// body : JSON.stringify({uniq : 'test', attr : info})
 			body : JSON.stringify({uniq : uniq, attr : attr}).toString()
-			// headers:{
-			// 'Accept': 'application/json',
-			// 'Content-Type': 'application/json'}
 		}).then((res) =>{
       if(res.status === 200 || res.status === 201){
 				res.json().then(
+					//현재 state에 set
 					json =>	this.setState({currentAttr : 'promotion-banner'+json})
 				);
       }else{
-				console.log('res.status : ' + res.status);
-        console.error(res.statusText);
+		console.log('res.status : ' + res.status);
       }
     }).catch(err => console.error(err));
 	}

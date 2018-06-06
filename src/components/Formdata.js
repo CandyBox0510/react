@@ -26,11 +26,14 @@ class Formdata extends Component{
         subAttr : () => console.warn('subAttr is not defined'),
     }
 
+    //속성 설정하는 함수 설정
     handleAttr = (e) =>{
         this.handleChange(e);
         this.props.onAttr(this.state.uniq,this.state.attr);
     }
 
+
+    //변경될때마다 key(uniq)값을 id로, value(attr)값을 value로 설정
     handleChange = (e) => {
         this.setState({
            [e.target.name] : e.target.value,
@@ -39,8 +42,10 @@ class Formdata extends Component{
         });
     }
 
+
     render(){
         let subAttr = null;
+        //첫 렌더시에만 인풋박스에 텍스트 표시를위한 로직
         if(this.state.idx === 0){
             subAttr=this.props.subAttr;
             console.log(this.state.idx);
